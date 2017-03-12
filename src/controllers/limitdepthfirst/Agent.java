@@ -1,15 +1,13 @@
 package controllers.limitdepthfirst;
 
-import java.awt.*;
-import java.util.ArrayList;
-
-
 import core.game.Observation;
 import core.game.StateObservation;
 import core.player.AbstractPlayer;
 import ontology.Types;
 import tools.ElapsedCpuTimer;
-import tools.Vector2d;
+
+import java.awt.*;
+import java.util.ArrayList;
 
 /**
  * Created by zyc on 3/12/17.
@@ -26,9 +24,7 @@ public class Agent extends AbstractPlayer{
     protected int block_size;
     private boolean foundPath;
     protected ArrayList<Types.ACTIONS> resultActions;
-    protected ArrayList<Types.ACTIONS> tempActions;
     protected ArrayList<StateObservation> stateArrary;
-    private double heuValue;
 
     /**
      * Public constructor with state observation and time due.
@@ -39,55 +35,29 @@ public class Agent extends AbstractPlayer{
     {
         //randomGenerator = new Random();
         foundPath = false;
-        heuValue = 999999;
-        tempActions = new ArrayList<>();
         resultActions = new ArrayList<>();
         stateArrary = new ArrayList<>();
         //resultActions.clear();
         grid = so.getObservationGrid();
         block_size = so.getBlockSize();
-        /*int depth = 1;
+        int depth = 1;
         while (!foundPath){
             DFS(so, depth);
             depth += 2;
-        }*/
-    }
-
-    private double heuristic(StateObservation stateObs){
-        ArrayList<Observation>[] fixedPositions = stateObs.getImmovablePositions();
-        ArrayList<Observation>[] movingPositions = stateObs.getMovablePositions();
-        Vector2d goalpos = fixedPositions[1].get(0).position;
-        Vector2d avatarpos = stateObs.getAvatarPosition();
-
-        double res = 0;
-        if (!movingPositions[0].isEmpty()){
-            Vector2d keypos = movingPositions[0].get(0).position;
-            res += avatarpos.dist(keypos) + keypos.dist(goalpos);
-        }else{
-            res += avatarpos.dist(goalpos);
         }
-        return res;
     }
     private void DFS(StateObservation so, int depth){
 
         stateArrary.add(so);
         ArrayList<Types.ACTIONS> actions = so.getAvailableActions();
-        if (heuristic(so)<heuValue){
-            heuValue = heuristic(so);
-            System.out.println(heuValue);
-            resultActions.clear();
-            resultActions = (ArrayList<Types.ACTIONS>) tempActions.clone();
-        }
+
         for (Types.ACTIONS actionTry: actions) {
             if (foundPath) break;
             StateObservation stCopy = so.copy();
             stCopy.advance(actionTry);
-            tempActions.add(actionTry);
             if (stCopy.isGameOver()){
                 System.out.println("Step: " + stateArrary.size());
                 foundPath = true;
-                resultActions.clear();
-                resultActions = (ArrayList<Types.ACTIONS>) tempActions.clone();
             }else{
                 //判断是否形成回路,如果没有就继续搜索
                 boolean isLoop = false;
@@ -101,8 +71,11 @@ public class Agent extends AbstractPlayer{
                     DFS(stCopy, depth -1);
                 }
             }
-            tempActions.remove(actionTry);
+            if (foundPath){
+                resultActions.add(actionTry);
+            }
         }
+
         stateArrary.remove(so);
     }
     /**
@@ -114,12 +87,8 @@ public class Agent extends AbstractPlayer{
      */
     @Override
     public Types.ACTIONS act(StateObservation stateObs, ElapsedCpuTimer elapsedTimer) {
-        int depth = 10;
-        heuValue = 999999;
-        DFS(stateObs, depth);
-        //return resultActions.remove(resultActions.size()-1);
-        System.out.println(resultActions.size());
-        return resultActions.remove(0);
+
+        return resultActions.remove(resultActions.size()-1);
     }
 
     /**
