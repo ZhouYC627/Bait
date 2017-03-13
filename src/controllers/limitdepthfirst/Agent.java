@@ -24,11 +24,15 @@ public class Agent extends AbstractPlayer{
      * block size
      */
     protected int block_size;
+    private double heuValue;
+    private int finalStep;
     private boolean foundPath;
-    protected ArrayList<Types.ACTIONS> resultActions;
+    private static final int LIMITED_DEPTH = 5;
+    private static final int MAX_HEU = 999999;
+    protected Types.ACTIONS resultAction;
     protected ArrayList<Types.ACTIONS> tempActions;
     protected ArrayList<StateObservation> stateArrary;
-    private double heuValue;
+
 
     /**
      * Public constructor with state observation and time due.
@@ -39,9 +43,8 @@ public class Agent extends AbstractPlayer{
     {
         //randomGenerator = new Random();
         foundPath = false;
-        heuValue = 999999;
         tempActions = new ArrayList<>();
-        resultActions = new ArrayList<>();
+        //resultActions = new ArrayList<>();
         stateArrary = new ArrayList<>();
         //resultActions.clear();
         grid = so.getObservationGrid();
@@ -53,41 +56,47 @@ public class Agent extends AbstractPlayer{
         }*/
     }
 
+    private double gridDist(Vector2d v0, Vector2d v1){
+        return Math.abs(v0.x-v1.x)+Math.abs(v0.y-v1.y);
+    }
+
     private double heuristic(StateObservation stateObs){
         ArrayList<Observation>[] fixedPositions = stateObs.getImmovablePositions();
         ArrayList<Observation>[] movingPositions = stateObs.getMovablePositions();
         Vector2d goalpos = fixedPositions[1].get(0).position;
         Vector2d avatarpos = stateObs.getAvatarPosition();
-
-        double res = 0;
-        if (!movingPositions[0].isEmpty()){
-            Vector2d keypos = movingPositions[0].get(0).position;
-            res += avatarpos.dist(keypos) + keypos.dist(goalpos);
-        }else{
-            res += avatarpos.dist(goalpos);
+        Vector2d keypos;
+        double dist = MAX_HEU;
+        if (stateObs.getAvatarType()==1){//没拿到钥匙
+            keypos = movingPositions[0].get(0).position;
+            dist = gridDist(avatarpos, keypos)*10 + gridDist(keypos, goalpos);
+        }else if(stateObs.getAvatarType()==4){//拿到了钥匙
+            dist = gridDist(avatarpos, goalpos);
         }
-        return res;
+        return dist;
     }
     private void DFS(StateObservation so, int depth){
 
+        if (depth == 0){
+            //System.out.println(heuristic(so));
+            if (heuristic(so)<heuValue) {
+                heuValue = heuristic(so);
+                resultAction = tempActions.get(0);
+            }
+            return;
+        }
         stateArrary.add(so);
         ArrayList<Types.ACTIONS> actions = so.getAvailableActions();
-        if (heuristic(so)<heuValue){
-            heuValue = heuristic(so);
-            System.out.println(heuValue);
-            resultActions.clear();
-            resultActions = (ArrayList<Types.ACTIONS>) tempActions.clone();
-        }
         for (Types.ACTIONS actionTry: actions) {
             if (foundPath) break;
             StateObservation stCopy = so.copy();
             stCopy.advance(actionTry);
             tempActions.add(actionTry);
             if (stCopy.isGameOver()){
-                System.out.println("Step: " + stateArrary.size());
                 foundPath = true;
-                resultActions.clear();
-                resultActions = (ArrayList<Types.ACTIONS>) tempActions.clone();
+                heuValue = -depth;
+                finalStep = 0;
+                resultAction = tempActions.get(finalStep++);
             }else{
                 //判断是否形成回路,如果没有就继续搜索
                 boolean isLoop = false;
@@ -97,13 +106,14 @@ public class Agent extends AbstractPlayer{
                         break;
                     }
                 }
-                if (!isLoop && depth > 1){
+                if (!isLoop && depth > 0){
                     DFS(stCopy, depth -1);
                 }
             }
-            tempActions.remove(actionTry);
+            if (foundPath) break;
+            tempActions.remove(tempActions.size()-1);
         }
-        stateArrary.remove(so);
+        //stateArrary.remove(stCopy);
     }
     /**
      * Picks an action. This function is called every game step to request an
@@ -114,12 +124,17 @@ public class Agent extends AbstractPlayer{
      */
     @Override
     public Types.ACTIONS act(StateObservation stateObs, ElapsedCpuTimer elapsedTimer) {
-        int depth = 10;
-        heuValue = 999999;
-        DFS(stateObs, depth);
+        if (!foundPath) {
+            heuValue = MAX_HEU;
+            tempActions.clear();
+            stateArrary.clear();
+            DFS(stateObs, LIMITED_DEPTH);
+        }else{
+            resultAction = tempActions.get(finalStep++);
+        }
         //return resultActions.remove(resultActions.size()-1);
-        System.out.println(resultActions.size());
-        return resultActions.remove(0);
+        //System.out.println(resultAction.toString());
+        return resultAction;
     }
 
     /**
