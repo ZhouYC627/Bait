@@ -32,6 +32,7 @@ public class AvailableState implements Comparable{
     }
 
     private double heuristic(StateObservation stateObs){
+
         if(stateObs.isGameOver()) {
             if (stateObs.getGameWinner() == Types.WINNER.PLAYER_WINS) {
                 return 0;
@@ -41,7 +42,24 @@ public class AvailableState implements Comparable{
         }
         ArrayList<Observation>[] fixedPositions = stateObs.getImmovablePositions();
         ArrayList<Observation>[] movingPositions = stateObs.getMovablePositions();
-        Vector2d goalpos = fixedPositions[1].get(0).position;
+        Vector2d goalpos = new Vector2d(0,0) ;
+        for (ArrayList<Observation> fixedPos : fixedPositions){
+            int iType = fixedPos.get(0).itype;
+            switch (iType){
+                //Hole
+                case 2:
+                    costs += 100 * fixedPos.size();
+                    break;
+                //Mushroom
+                case 5:
+                    costs += 100 * fixedPos.size();
+                    break;
+                //Goal
+                case 7:
+                    goalpos = fixedPos.get(0).position;
+                    break;
+            }
+        }
         Vector2d avatarpos = stateObs.getAvatarPosition();
         Vector2d keypos;
 
