@@ -45,7 +45,7 @@ public class Agent extends AbstractPlayer {
 
         Astar(so, 0);
 
-        System.out.println(timeCount + "ms");
+        //System.out.println(timeCount + "ms");
     }
 
 
