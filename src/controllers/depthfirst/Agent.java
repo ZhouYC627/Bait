@@ -53,7 +53,7 @@ public class Agent extends AbstractPlayer{
             StateObservation stCopy = so.copy();
             stCopy.advance(actionTry);
             if (stCopy.isGameOver()){
-                System.out.println("Step: " + stateArrary.size());
+                //System.out.println("Step: " + stateArrary.size());
                 foundPath = true;
             }else{
                 //判断是否形成回路,如果没有就继续搜索
