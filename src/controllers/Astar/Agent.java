@@ -1,13 +1,16 @@
 package controllers.Astar;
 
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.PriorityQueue;
+
+
 import core.game.Observation;
 import core.game.StateObservation;
 import core.player.AbstractPlayer;
 import ontology.Types;
 import tools.ElapsedCpuTimer;
-
-import java.awt.*;
-import java.util.ArrayList;
+import tools.Vector2d;
 
 /**
  * Created by zyc on 3/12/17.
@@ -22,9 +25,12 @@ public class Agent extends AbstractPlayer{
      * block size
      */
     protected int block_size;
+    private double heuValue;
+    private int finalStep;
     private boolean foundPath;
-    protected ArrayList<Types.ACTIONS> resultActions;
-    protected ArrayList<StateObservation> stateArrary;
+    private static final int LIMITED_DEPTH = 5;
+    protected ArrayList<Types.ACTIONS> resultAction;
+    protected ArrayList<StateObservation> visitedStates;
 
     /**
      * Public constructor with state observation and time due.
@@ -33,50 +39,58 @@ public class Agent extends AbstractPlayer{
      */
     public Agent(StateObservation so, ElapsedCpuTimer elapsedTimer)
     {
-        //randomGenerator = new Random();
         foundPath = false;
-        resultActions = new ArrayList<>();
-        stateArrary = new ArrayList<>();
-        //resultActions.clear();
+        resultAction = new ArrayList<>();
+        visitedStates = new ArrayList<>();
         grid = so.getObservationGrid();
         block_size = so.getBlockSize();
-        int depth = 1;
-        while (!foundPath){
-            DFS(so, depth);
-            depth += 2;
-        }
+
+        Astar(so, 0);
     }
-    private void DFS(StateObservation so, int depth){
 
-        stateArrary.add(so);
+
+
+
+
+    private void Astar(StateObservation so, int depth){
+
+        visitedStates.add(so);
         ArrayList<Types.ACTIONS> actions = so.getAvailableActions();
-
+        PriorityQueue<AvailableState> availableStates = new PriorityQueue<>();
         for (Types.ACTIONS actionTry: actions) {
-            if (foundPath) break;
+            //if (foundPath) break;
             StateObservation stCopy = so.copy();
             stCopy.advance(actionTry);
-            if (stCopy.isGameOver()){
-                System.out.println("Step: " + stateArrary.size());
+            availableStates.offer(new AvailableState(stCopy, depth));
+        }
+        //从优先级队列中每次取出一个 f(n) 最小的状态，对其进行搜索
+        while (!availableStates.isEmpty() && !foundPath){
+            //tempActions.add(actionTry);
+            AvailableState curOptimalSt = availableStates.remove();
+            if (curOptimalSt.stateObs.getGameWinner()== Types.WINNER.PLAYER_WINS){
                 foundPath = true;
+                System.out.println("Bingo!!!");
+                finalStep = 0;
+                resultAction.add(curOptimalSt.stateObs.getAvatarLastAction());
             }else{
                 //判断是否形成回路,如果没有就继续搜索
                 boolean isLoop = false;
-                for (StateObservation s: stateArrary){
-                    if (s.equalPosition(stCopy)){
+                for (StateObservation s: visitedStates){
+                    if (s.equalPosition(curOptimalSt.stateObs)){
                         isLoop = true;
                         break;
                     }
                 }
-                if (!isLoop && depth > 1){
-                    DFS(stCopy, depth -1);
+                if (!isLoop){
+                    //System.out.println("Step: " + depth + "\t" + curOptimalSt.stateObs.getAvatarLastAction().toString());
+                    Astar(curOptimalSt.stateObs, depth + 1);
                 }
             }
-            if (foundPath){
-                resultActions.add(actionTry);
-            }
         }
-
-        stateArrary.remove(so);
+        if (foundPath){
+            resultAction.add(so.getAvatarLastAction());
+        }
+        //stateArrary.remove(stCopy);
     }
     /**
      * Picks an action. This function is called every game step to request an
@@ -87,8 +101,9 @@ public class Agent extends AbstractPlayer{
      */
     @Override
     public Types.ACTIONS act(StateObservation stateObs, ElapsedCpuTimer elapsedTimer) {
-
-        return resultActions.remove(resultActions.size()-1);
+        Types.ACTIONS action= resultAction.remove(resultAction.size()-1);
+        System.out.println(action.toString());
+        return action;
     }
 
     /**

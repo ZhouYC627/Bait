@@ -41,19 +41,11 @@ public class Agent extends AbstractPlayer{
      */
     public Agent(StateObservation so, ElapsedCpuTimer elapsedTimer)
     {
-        //randomGenerator = new Random();
         foundPath = false;
         tempActions = new ArrayList<>();
-        //resultActions = new ArrayList<>();
         stateArrary = new ArrayList<>();
-        //resultActions.clear();
         grid = so.getObservationGrid();
         block_size = so.getBlockSize();
-        /*int depth = 1;
-        while (!foundPath){
-            DFS(so, depth);
-            depth += 2;
-        }*/
     }
 
     private double gridDist(Vector2d v0, Vector2d v1){
@@ -65,10 +57,10 @@ public class Agent extends AbstractPlayer{
         ArrayList<Observation>[] movingPositions = stateObs.getMovablePositions();
         Vector2d goalpos = fixedPositions[1].get(0).position;
         Vector2d avatarpos = stateObs.getAvatarPosition();
-        Vector2d keypos;
+
         double dist = MAX_HEU;
         if (stateObs.getAvatarType()==1){//没拿到钥匙
-            keypos = movingPositions[0].get(0).position;
+            Vector2d keypos = movingPositions[0].get(0).position;
             dist = gridDist(avatarpos, keypos)*10 + gridDist(keypos, goalpos);
         }else if(stateObs.getAvatarType()==4){//拿到了钥匙
             dist = gridDist(avatarpos, goalpos);
@@ -132,7 +124,6 @@ public class Agent extends AbstractPlayer{
         }else{
             resultAction = tempActions.get(finalStep++);
         }
-        //return resultActions.remove(resultActions.size()-1);
         //System.out.println(resultAction.toString());
         return resultAction;
     }
