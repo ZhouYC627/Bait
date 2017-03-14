@@ -10,7 +10,6 @@ import core.game.StateObservation;
 import core.player.AbstractPlayer;
 import ontology.Types;
 import tools.ElapsedCpuTimer;
-import tools.Vector2d;
 
 /**
  * Created by zyc on 3/12/17.
@@ -25,11 +24,9 @@ public class Agent extends AbstractPlayer {
      * block size
      */
     protected int block_size;
-    private double heuValue;
-    private int finalStep;
+    private long timeCount;
     private boolean foundPath;
     private Types.ACTIONS action;
-    private static final int LIMITED_DEPTH = 5;
     protected ArrayList<Types.ACTIONS> resultAction;
     protected ArrayList<StateObservation> visitedStates;
 
@@ -47,6 +44,8 @@ public class Agent extends AbstractPlayer {
         block_size = so.getBlockSize();
 
         Astar(so, 0);
+
+        System.out.println(timeCount + "ms");
     }
 
 
@@ -60,6 +59,7 @@ public class Agent extends AbstractPlayer {
             StateObservation stCopy = so.copy();
             stCopy.advance(actionTry);
 
+            //long start = System.currentTimeMillis();
             //判断是否形成回路,如果没有就继续搜索
             boolean isLoop = false;
             for (StateObservation s : visitedStates) {
@@ -68,13 +68,15 @@ public class Agent extends AbstractPlayer {
                     break;
                 }
             }
+            //long end = System.currentTimeMillis();
+            //timeCount = timeCount + end-start;
 
             if (!isLoop && !stCopy.isGameOver()) {
                 availableStates.offer(new AvailableState(stCopy, depth));
             } else {
                 if (stCopy.getGameWinner() == Types.WINNER.PLAYER_WINS) {
                     foundPath = true;
-                    System.out.println("Bingo!!!");
+                    //System.out.println("Bingo!!!");
                     resultAction.add(stCopy.getAvatarLastAction());
                 }
             }
@@ -84,34 +86,10 @@ public class Agent extends AbstractPlayer {
             //tempActions.add(actionTry);
             AvailableState curOptimalSt = availableStates.remove();
             Astar(curOptimalSt.stateObs, depth + 1);
-            /*
-            if (curOptimalSt.stateObs.getGameWinner()== Types.WINNER.PLAYER_WINS){
-                foundPath = true;
-                System.out.println("Bingo!!!");
-                finalStep = 0;
-                resultAction.add(curOptimalSt.stateObs.getAvatarLastAction());
-            }else{
-                if (curOptimalSt.stateObs.isGameOver()){
-                    continue;
-                }
-                //判断是否形成回路,如果没有就继续搜索
-                boolean isLoop = false;
-                for (StateObservation s: visitedStates){
-                    if (s.equalPosition(curOptimalSt.stateObs)){
-                        isLoop = true;
-                        break;
-                    }
-                }
-                if (!isLoop){
-                    //System.out.println("Step: " + depth + "\t" + curOptimalSt.stateObs.getAvatarLastAction().toString());
-                    Astar(curOptimalSt.stateObs, depth + 1);
-                }
-            }*/
         }
         if (foundPath) {
             resultAction.add(so.getAvatarLastAction());
         }
-        //stateArrary.remove(stCopy);
     }
 
     /**

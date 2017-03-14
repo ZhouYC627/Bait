@@ -48,7 +48,7 @@ public class AvailableState implements Comparable{
             switch (iType){
                 //Hole
                 case 2:
-                    costs += 100 * fixedPos.size();
+                    costs += 50 * fixedPos.size();
                     break;
                 //Mushroom
                 case 5:
