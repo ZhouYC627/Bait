@@ -26,7 +26,9 @@ public class Agent extends AbstractPlayer {
     protected int block_size;
     private long timeCount;
     private boolean foundPath;
+    private int stepCount;
     private Types.ACTIONS action;
+    protected PriorityQueue<AvailableState> availableStates;
     protected ArrayList<Types.ACTIONS> resultAction;
     protected ArrayList<StateObservation> visitedStates;
 
@@ -38,58 +40,76 @@ public class Agent extends AbstractPlayer {
      */
     public Agent(StateObservation so, ElapsedCpuTimer elapsedTimer) {
         foundPath = false;
+        stepCount = 0;
         resultAction = new ArrayList<>();
         visitedStates = new ArrayList<>();
         grid = so.getObservationGrid();
         block_size = so.getBlockSize();
+        availableStates = new PriorityQueue<>();
 
-        Astar(so, 0);
+
+        Astar(so);
 
         //System.out.println(timeCount + "ms");
     }
 
 
-    private void Astar(StateObservation so, int depth) {
+    private void Astar(StateObservation so) {
+        availableStates.offer(new AvailableState(so));
 
-        visitedStates.add(so);
-        ArrayList<Types.ACTIONS> actions = so.getAvailableActions();
-        PriorityQueue<AvailableState> availableStates = new PriorityQueue<>();
-        for (Types.ACTIONS actionTry : actions) {
-            //if (foundPath) break;
-            StateObservation stCopy = so.copy();
-            stCopy.advance(actionTry);
-
-            //long start = System.currentTimeMillis();
-            //判断是否形成回路,如果没有就继续搜索
-            boolean isLoop = false;
-            for (StateObservation s : visitedStates) {
-                if (s.equalPosition(stCopy)) {
-                    isLoop = true;
-                    break;
-                }
-            }
-            //long end = System.currentTimeMillis();
-            //timeCount = timeCount + end-start;
-
-            if (!isLoop && !stCopy.isGameOver()) {
-                availableStates.offer(new AvailableState(stCopy, depth));
-            } else {
-                if (stCopy.getGameWinner() == Types.WINNER.PLAYER_WINS) {
-                    foundPath = true;
-                    //System.out.println("Bingo!!!");
-                    resultAction.add(stCopy.getAvatarLastAction());
-                }
-            }
-        }
         //从优先级队列中每次取出一个 f(n) 最小的状态，对其进行搜索
         while (!availableStates.isEmpty() && !foundPath) {
+            AvailableState nextState = availableStates.remove();
+            System.out.println(nextState.heuValue + ": " + nextState.getSteps() + nextState.stateObs.getAvatarPosition());
+            visitedStates.add(nextState.stateObs);
+            ArrayList<Types.ACTIONS> actions = nextState.stateObs.getAvailableActions();
+            for (Types.ACTIONS actionTry : actions) {
+                //if (foundPath) break;
+                StateObservation stCopy = nextState.stateObs.copy();
+                stCopy.advance(actionTry);
+
+                //long start = System.currentTimeMillis();
+                //判断是否形成回路,如果没有就继续搜索
+                boolean isLoop = false;
+                for (StateObservation s : visitedStates) {
+                    if (stCopy.equalPosition(s)) {
+                        isLoop = true;
+                        break;
+                    }
+                }
+                //long end = System.currentTimeMillis();
+                //timeCount = timeCount + end-start;
+
+                if (!isLoop && !stCopy.isGameOver()) {
+                    availableStates.offer(new AvailableState(stCopy, nextState));
+                } else {
+                    if (stCopy.getGameWinner() == Types.WINNER.PLAYER_WINS) {
+                        foundPath = true;
+                        System.out.println("Bingo!!!");
+                        //回溯确定路径
+                        resultAction.add(stCopy.getAvatarLastAction());
+                        AvailableState it = nextState;
+                        while (it.lastState != null){
+                            resultAction.add(it.stateObs.getAvatarLastAction());
+                            it = it.lastState;
+                        }
+                    }
+                    if (stCopy.isGameOver()){
+                        System.out.println(nextState.getSteps() + "; "+ stCopy.getAvatarPosition());
+                        System.out.println(stCopy.getGameWinner().toString());
+                    }
+                    }
+            }
             //tempActions.add(actionTry);
-            AvailableState curOptimalSt = availableStates.remove();
-            Astar(curOptimalSt.stateObs, depth + 1);
+            //AvailableState curOptimalSt = availableStates.remove();
+            //Astar(curOptimalSt.stateObs, depth + 1);
         }
+        /*
         if (foundPath) {
             resultAction.add(so.getAvatarLastAction());
         }
+        */
+        //System.out.println(so.getAvatarType() + "\n" + so.getGameWinner().toString() + so.getAvatarPosition().toString());
     }
 
     /**
@@ -103,8 +123,9 @@ public class Agent extends AbstractPlayer {
     @Override
     public Types.ACTIONS act(StateObservation stateObs, ElapsedCpuTimer elapsedTimer) {
         if (!resultAction.isEmpty()) {
-            action = resultAction.remove(resultAction.size() - 1);
+            action = resultAction.remove(resultAction.size()-1);
         }
+        //action = resultAction.get(stepCount++);
         //System.out.println(action.toString());
         return action;
     }

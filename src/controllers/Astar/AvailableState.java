@@ -18,13 +18,29 @@ public class AvailableState implements Comparable{
     StateObservation stateObs;
     public double costs;
     public double heuValue;
+    private int steps;
+    public AvailableState lastState;
 
-    private static final int MAX_HEU = 999999;
+    private static final int MAX_HEU = 9999999;
 
-    public AvailableState(StateObservation so, int depth){
+    public AvailableState(StateObservation so){
         stateObs = so.copy();
-        costs = depth * 50;
+        costs = 0;
+        steps = 0;
+        lastState = null;
         heuValue = heuristic(stateObs);
+    }
+
+    public AvailableState(StateObservation so, AvailableState last){
+        this.lastState = last;
+        this.steps = last.getSteps() + 1;
+        stateObs = so.copy();
+        //costs = steps * 50;
+        heuValue = heuristic(stateObs);
+    }
+
+    public int getSteps(){
+        return steps;
     }
 
     private double gridDist(Vector2d v0, Vector2d v1){
@@ -32,7 +48,7 @@ public class AvailableState implements Comparable{
     }
 
     private double heuristic(StateObservation stateObs){
-
+        costs = steps * 50;
         if(stateObs.isGameOver()) {
             if (stateObs.getGameWinner() == Types.WINNER.PLAYER_WINS) {
                 return 0;
@@ -48,7 +64,7 @@ public class AvailableState implements Comparable{
             switch (iType){
                 //Hole
                 case 2:
-                    costs += 50 * fixedPos.size();
+                    costs += 200 * fixedPos.size();
                     break;
                 //Mushroom
                 case 5:
@@ -66,7 +82,7 @@ public class AvailableState implements Comparable{
         double dist = MAX_HEU;
         if (stateObs.getAvatarType()==1){//没拿到钥匙
             keypos = movingPositions[0].get(0).position;
-            dist = gridDist(avatarpos, keypos) + gridDist(keypos, goalpos);
+            dist = gridDist(avatarpos, keypos) + gridDist(keypos, goalpos) + 500;
         }else if(stateObs.getAvatarType()==4){//拿到了钥匙
             dist = gridDist(avatarpos, goalpos);
         }
