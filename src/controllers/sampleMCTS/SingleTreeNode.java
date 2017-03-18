@@ -21,7 +21,7 @@ public class SingleTreeNode
     public static Random m_rnd;
     private int m_depth;
     protected static double[] bounds = new double[]{Double.MAX_VALUE, -Double.MAX_VALUE};
-    public SingleTreeNode(Random rnd) {
+     public SingleTreeNode(Random rnd) {
         this(null, null, rnd);
     }
 

@@ -21,7 +21,7 @@ public class AvailableState implements Comparable{
     private int steps;
     public AvailableState lastState;
 
-    private static final int MAX_HEU = 9999999;
+    private static final double MAX_HEU = Double.MAX_VALUE;
 
     public AvailableState(StateObservation so){
         stateObs = so.copy();
@@ -64,7 +64,7 @@ public class AvailableState implements Comparable{
             switch (iType){
                 //Hole
                 case 2:
-                    costs += 200 * fixedPos.size();
+                    costs += 500 * fixedPos.size();
                     break;
                 //Mushroom
                 case 5:
